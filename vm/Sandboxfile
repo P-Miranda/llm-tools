@@ -1,0 +1,12 @@
+# Mount, PATH, network and secret settings are in bin/vmwork.
+image: "llm-tools:latest"
+pull_policy: never
+cpus: 4
+memory: "4G"
+user: "1000:1000"
+security: restricted
+env:
+  HOME: "/home/agent"
+  LANG: "C.UTF-8"
+  NODE_EXTRA_CA_CERTS: "/.msb/tls/ca.pem"
+  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"

@@ -1,0 +1,8 @@
+# Read-only tool mounts: HOST_DIR [VM_DIR]. VM_DIR defaults to HOST_DIR; its bin/ goes in PATH.
+/home/pm/opt/verilator-v5.040
+/home/pm/opt/xezim-0.11.0
+/home/pm/opt/verible-v0.0-4013-gba3dc371
+# riscv64-unknown-elf-, at the default RISCV_PATH of iob-soc-int
+/home/pm/opt/riscv_2022.06.10 /opt/riscv
+# riscv64-unknown-linux-gnu-
+/home/pm/opt/riscv_2023.02.25

@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage='Usage: vmwork [shell|test|stop|rm|dry-run] [DIR]
+       vmwork build'
+root=$(dirname "$(dirname "$(readlink -f "$0")")")
+image=llm-tools:latest
+token_file=$HOME/.config/vmwork/token
+
+die() { echo "vmwork: $*" >&2; exit 1; }
+
+# True if $1 is $2 or is inside it.
+inside() { [[ $1/ == "${2%/}/"* ]]; }
+
+check_dir() {
+  local allowed
+  [[ $dir != *[:,]* ]] || die "':' and ',' are not supported in paths: $dir"
+  ! inside "$root" "$dir" || die "$dir contains $root"
+  ! inside "$dir" "$root" || die "$dir is inside $root"
+  ! inside "$HOME" "$dir" || die "$dir contains the home directory"
+  while read -r allowed; do
+    [[ $allowed == /* ]] || continue
+    if inside "$dir" "$allowed"; then return; fi
+  done < "$root/vm/allowed-dirs"
+  die "$dir is not in a directory listed in $root/vm/allowed-dirs"
+}
+
+create_args() {
+  local src dst path=
+  args=(create --file "$root/vm/Sandboxfile" --name "$name" --workdir "$dir"
+    --mount-dir "$dir:$dir:rw,nosuid,nodev,host-perms=mirror,uid=1000,gid=1000,quota=5G"
+    --net-default-egress deny
+    --net-rule 'allow@api.anthropic.com:tcp:443,allow@dns'
+    --tls-intercept
+    --secret 'CLAUDE_CODE_OAUTH_TOKEN:headers=[Authorization]@api.anthropic.com')
+  while read -r src dst; do
+    [[ $src == /* ]] || continue
+    [ -d "$src/bin" ] || die "$src/bin not found (see $root/vm/tools)"
+    dst=${dst:-$src}
+    args+=(--mount-dir "$src:$dst:ro,nosuid,nodev")
+    path+=$dst/bin:
+  done < "$root/vm/tools"
+  args+=(--env "PATH=/home/agent/.local/bin:/opt/venv/bin:${path}/usr/local/bin:/usr/bin:/bin")
+}
+
+load_token() {
+  [ -s "$token_file" ] || die "missing $token_file (see README)"
+  [ "$(stat -c %a "$token_file")" = 600 ] || die "run: chmod 600 $token_file"
+  CLAUDE_CODE_OAUTH_TOKEN=$(<"$token_file")
+  export CLAUDE_CODE_OAUTH_TOKEN
+}
+
+start() {
+  check_dir
+  load_token
+  if msb inspect "$name" >/dev/null 2>&1; then
+    # msb exec alone would stop the VM again when the first shell exits.
+    msb ping -q "$name" >/dev/null 2>&1 || msb start "$name"
+  else
+    create_args
+    msb "${args[@]}"
+  fi
+}
+
+run_tests() {
+  local rc=0
+  probe=$dir/.vmwork-probe
+  [ ! -e "$probe" ] || die "$probe already exists"
+  trap 'rm -f -- "$probe"' EXIT
+  msb exec --no-tty -w "$dir" "$name" -- bash -s < "$root/tests/guest.sh" || rc=1
+  if [ "$(stat -c '%U %A' "$probe" 2>/dev/null)" = "$(id -un) -rwxr-xr-x" ]; then
+    echo "ok    host sees owner and exec bit"
+  else
+    echo "FAIL  host sees: $(stat -c '%U %A' "$probe" 2>&1)"
+    rc=1
+  fi
+  return $rc
+}
+
+cmd=${1:-shell}
+case $cmd in
+  build)
+    docker build -t "$image" "$root/image"
+    docker save "$image" | msb load
+    exit ;;
+  shell|test|stop|rm|dry-run) ;;
+  *) echo "$usage" >&2; exit 1 ;;
+esac
+
+dir=$(realpath -e -- "${2:-.}")
+[ -d "$dir" ] || die "$dir is not a directory"
+slug=$(basename "$dir" | tr -cs 'A-Za-z0-9\n' '-' | tr 'A-Z' 'a-z')
+hash=$(printf %s "$dir" | sha256sum)
+name=vmwork-$slug-${hash:0:8}
+
+case $cmd in
+  shell)   start; exec msb exec -t -e "TERM=${TERM:-xterm-256color}" -w "$dir" "$name" -- bash ;;
+  test)    start; run_tests ;;
+  stop)    msb stop "$name" ;;
+  rm)      msb rm --force "$name" ;;
+  dry-run) check_dir; create_args; printf '%q ' msb "${args[@]}"; echo ;;
+esac
