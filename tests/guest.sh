@@ -39,6 +39,13 @@ for tool in verilator verible-verilog-lint riscv64-unknown-elf-gcc \
 done
 check "python packages" python3 -c 'import matplotlib, numpy, scipy, parse, serial, wavedrom'
 check "tmux starts non-login shells" bash -c 'tmux -L probe new -d "sleep 5" && tmux -L probe show -gv default-command | grep -qx bash'
+check "claude settings valid" jq -e '(.hooks == null) and (.autoMemoryEnabled == false)' ~/.claude/settings.json
+check "claude skills present" test -f ~/.claude/skills/architecture-decision-record-skill/SKILL.md
+check "no claude login file" not test -e ~/.claude/.credentials.json
+check "claude config writable" test -w ~/.claude/settings.json -a -w ~/.claude/skills
+check "claude instructions present" grep -q "^## Verilog Style" ~/.claude/CLAUDE.md
+check "git identity set" git config user.email
+check "host tmux config" grep -q 'prefix C-a' ~/.tmux.conf
 check "docker socket hidden" not test -e /var/run/docker.sock
 check "token is a placeholder" bash -c '[[ $CLAUDE_CODE_OAUTH_TOKEN == \$MSB_* ]]'
 check "Anthropic API reachable" reaches_anthropic

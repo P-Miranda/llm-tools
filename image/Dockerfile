@@ -20,6 +20,8 @@ USER agent
 WORKDIR /home/agent
 RUN curl -fsSL https://claude.ai/install.sh | bash \
     && echo '{"hasCompletedOnboarding":true}' > /home/agent/.claude.json
+COPY --chown=agent:agent home/ /home/agent/
+RUN ln -s .gitconfig.work /home/agent/.gitconfig
 ENV HOME=/home/agent \
     PATH=/home/agent/.local/bin:/opt/venv/bin:/usr/local/bin:/usr/bin:/bin \
     LANG=C.UTF-8

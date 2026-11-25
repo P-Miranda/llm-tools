@@ -80,7 +80,7 @@ run_tests() {
 cmd=${1:-shell}
 case $cmd in
   build)
-    docker build -t "$image" "$root/image"
+    docker build -t "$image" -f "$root/image/Dockerfile" "$root"
     docker save "$image" | msb load
     exit ;;
   shell|test|stop|rm|dry-run) ;;

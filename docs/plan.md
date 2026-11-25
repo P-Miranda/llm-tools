@@ -15,6 +15,7 @@ in the mounted directory.
 | Network | `api.anthropic.com:443` and DNS only |
 | Credentials | Token substituted by the host; no SSH keys, no host `~/.claude` |
 | Tools | Packages in the image; verilator, xezim, verible, RISC-V read-only from `~/opt` |
+| Config | `home/`, copied into the image; not shared with the host's `~/.claude` |
 | Excluded | libreoffice, texlive, gtkwave, doxygen, iverilog |
 | Resources | 4 CPUs, 4 GB RAM, 5 GB mount quota |
 | Backups | None exist for `Work`, so no wider mount until they do |

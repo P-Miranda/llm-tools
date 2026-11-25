@@ -3,13 +3,14 @@
 Run Claude Code in a microsandbox VM with one host directory mounted live, read-write.
 The directory can be anything; it does not need to be a git repository.
 
-Status: **not tested yet**. See [docs/plan.md](docs/plan.md).
+Status: isolation checks pass with v0.8.2; interactive use not fully checked. See [docs/plan.md](docs/plan.md).
 
 | File | Purpose |
 |---|---|
 | `install/check-host.sh` | Check host requirements (changes nothing) |
 | `install/install-msb.sh` | Install the pinned microsandbox release, SHA-256 checked |
 | `image/Dockerfile` | VM image |
+| `home/` | Copied to the VM user's home: Claude settings and skills, tmux and readline config |
 | `vm/Sandboxfile` | Fixed VM settings |
 | `vm/allowed-dirs` | Directories that may be mounted, with their subdirectories |
 | `vm/tools` | Host tools mounted read-only and added to `PATH` |
@@ -76,6 +77,10 @@ cannot see its parent.
 After changing the image or the settings: `vmwork rm`, then `vmwork`.
 
 To add tools: packages in `image/Dockerfile` (then `vmwork build`), host directories in `vm/tools`.
+
+Claude settings and skills are edited in `home/.claude`, separately from the host's `~/.claude`.
+Apply with `vmwork build` and `vmwork rm`. Changes made inside a VM stay in that VM. Never add
+`.credentials.json`, history or sessions here.
 
 ## Updating microsandbox
 
