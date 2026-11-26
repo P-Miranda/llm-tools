@@ -21,6 +21,11 @@ xezim_works() {
   echo 'module t; initial begin $display("xezim-ok"); $finish; end endmodule' > /tmp/t.v
   timeout 20 xezim /tmp/t.v | grep -q xezim-ok
 }
+xsim_works() (
+  cd "$(mktemp -d)" || exit 1
+  echo 'module t; initial begin $display("xsim-ok"); $finish; end endmodule' > t.v
+  xvlog t.v && xelab t -s t && timeout 60 xsim t -R | grep -q xsim-ok
+)
 claude_works() { timeout 90 claude -p 'Reply with exactly: pong' | grep -qi pong; }
 
 check "uid 1000" test "$(id -u)" = 1000
@@ -33,6 +38,7 @@ check "rest of ~/opt hidden" not test -e /home/pm/opt/KeePassXC
 check "tools read-only" not touch /opt/riscv/.vmwork-probe
 check "xezim runs" xezim -V
 check "xezim simulates" xezim_works
+check "xsim simulates" xsim_works
 for tool in verilator verible-verilog-lint riscv64-unknown-elf-gcc \
             riscv64-unknown-linux-gnu-gcc clang-format mypy black; do
   check "$tool runs" "$tool" --version

@@ -2,7 +2,7 @@
 image: "llm-tools:latest"
 pull_policy: never
 cpus: 4
-memory: "4G"
+memory: "8G"
 user: "1000:1000"
 security: restricted
 env:
