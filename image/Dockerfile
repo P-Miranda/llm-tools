@@ -2,8 +2,8 @@ FROM debian:trixie
 
 # libexpat1, libncursesw6, libmpc3, libmpfr6: RISC-V toolchains. perl, zlib1g-dev: verilator.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      bc bison build-essential ca-certificates clang-format curl file flex gawk git jq less \
-      libexpat1 libmpc3 libmpfr6 libncursesw6 librsvg2-bin libxml2-utils neovim perl procps \
+      bc bison build-essential ca-certificates clang-format curl file flex gawk git jq kitty-terminfo \
+      less libexpat1 libmpc3 libmpfr6 libncursesw6 librsvg2-bin libxml2-utils neovim perl procps \
       python3 python3-pip python3-venv ripgrep tmux unzip xz-utils zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
